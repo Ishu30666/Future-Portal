@@ -14,56 +14,80 @@ export const Me = async (req, res) => {
 };
 export const Login = async (req, res) => {
   const { email, password } = req.body;
-  if (!email || !password)
-    return res.status(401).json({ message: "All fields are required" });
+
+  if (!email || !password) {
+    return res.status(400).json({ message: "All fields are required" });
+  }
+
   try {
-    const ExistedUser = await User.findOne({ email });
-    if (!ExistedUser)
-      return res.status(401).json({ message: "Invalid Credentials" });
-    const decodedPassword = await bcrypt.compare(
-      password,
-      ExistedUser.password,
-    );
-    if (!decodedPassword)
-      return res.status(401).json({ message: "Invalid Credentials" });
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(401).json({ message: "Invalid credentials" });
+    }
+
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      return res.status(401).json({ message: "Invalid credentials" });
+    }
 
     const token = jwt.sign(
       {
-        userId: ExistedUser._id,
-        username: ExistedUser.username,
-        email: ExistedUser.email,
-        profilePic: ExistedUser.profilePic,
+        userId: user._id,
+        username: user.username,
+        email: user.email,
+        profilePic: user.profilePic,
       },
       process.env.SECRET_KEY,
       { expiresIn: "7d" },
     );
+
     res.cookie("jwt", token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      maxAge: 7 * 24 * 60 * 60 * 1000,
+      secure: true, // Must be true in production with HTTPS
+      sameSite: "none", // Allow cross-domain cookie
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
-    return res.status(201).json(ExistedUser);
+
+    return res.status(200).json({
+      message: "Login successful",
+      user: {
+        _id: user._id,
+        username: user.username,
+        email: user.email,
+        profilePic: user.profilePic,
+        isPaid: user.isPaid,
+      },
+    });
   } catch (error) {
-    console.log(error);
+    console.error("Login Error:", error);
+    return res.status(500).json({ message: "Internal server error" });
   }
 };
+
 export const Register = async (req, res) => {
   const { username, email, password } = req.body;
-  if (!username || !email || !password)
-    return res.status(401).json({ message: "All fields are required" });
+
+  if (!username || !email || !password) {
+    return res.status(400).json({ message: "All fields are required" });
+  }
+
   try {
-    const ExistedUser = await User.findOne({ email });
-    if (ExistedUser)
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
       return res
-        .status(401)
-        .json({ message: "User with this account already exist" });
+        .status(409)
+        .json({ message: "User with this email already exists" });
+    }
+
     const hashedPassword = await bcrypt.hash(password, 10);
     const newUser = new User({
       username,
       email,
       password: hashedPassword,
     });
+
     await newUser.save();
+
     const token = jwt.sign(
       {
         userId: newUser._id,
@@ -73,14 +97,25 @@ export const Register = async (req, res) => {
       process.env.SECRET_KEY,
       { expiresIn: "7d" },
     );
+
     res.cookie("jwt", token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure: true,
+      sameSite: "none",
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
-    return res.status(201).json(newUser);
+
+    return res.status(201).json({
+      message: "Registration successful",
+      user: {
+        _id: newUser._id,
+        username: newUser.username,
+        email: newUser.email,
+      },
+    });
   } catch (error) {
-    console.log(error);
+    console.error("Register Error:", error);
+    return res.status(500).json({ message: "Internal server error" });
   }
 };
 export const Logout = (req, res) => {
