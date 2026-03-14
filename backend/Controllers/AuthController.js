@@ -43,8 +43,8 @@ export const Login = async (req, res) => {
 
     res.cookie("jwt", token, {
       httpOnly: true,
-      secure: true, // Must be true in production with HTTPS
-      sameSite: "none", // Allow cross-domain cookie
+      secure: process.env.NODE_ENV === "production", // true on prod HTTPS
+      sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax", // cross-domain in prod
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
 
@@ -100,9 +100,9 @@ export const Register = async (req, res) => {
 
     res.cookie("jwt", token, {
       httpOnly: true,
-      secure: true,
-      sameSite: "none",
-      maxAge: 7 * 24 * 60 * 60 * 1000,
+      secure: process.env.NODE_ENV === "production", // true on prod HTTPS
+      sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax", // cross-domain in prod
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
 
     return res.status(201).json({
