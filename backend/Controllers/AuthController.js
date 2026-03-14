@@ -122,8 +122,10 @@ export const Logout = (req, res) => {
     res.clearCookie("jwt", {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax",
+      path: "/", // must match the path used when setting the cookie
     });
-    res.status(200).json({ message: "Logged Out Succesffully" });
+    res.status(200).json({ message: "Logged out successfully" });
   } catch (error) {
     console.log(error);
   }
