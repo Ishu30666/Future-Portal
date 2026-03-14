@@ -28,7 +28,13 @@ app.get("/Default_VerifyCertificate.aspx", (req, res) => {
   res.sendFile(filePath);
 });
 app.use("/api", AuthRoutes);
+const PORT = process.env.PORT || 3000;
 
-app.listen(3000, () => {
-  ConnectDatabase();
+app.listen(PORT, async () => {
+  try {
+    await ConnectDatabase();
+    console.log(`🚀 Server running on port ${PORT}`);
+  } catch (error) {
+    console.log("Database connection failed:", error);
+  }
 });
