@@ -144,9 +144,9 @@ export const UploadFile = async (req, res) => {
       return res.status(400).json({ message: "tid and cid are required" });
     }
 
-    const aid = req.file.filename;
+    const aid = path.parse(req.file.filename).name;
 
-    const fileUrl = `${process.env.BASEURL}Default_VerifyCertificate.aspx/?tid=${tid}&cid=${cid}&aid=${req.file.filename}`;
+    const fileUrl = `${process.env.BASEURL}Default_VerifyCertificate.aspx/?tid=${tid}&cid=${cid}&aid=${aid}`;
 
     const qrCode = await QRCode.toDataURL(fileUrl);
 
