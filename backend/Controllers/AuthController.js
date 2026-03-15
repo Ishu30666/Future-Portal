@@ -131,7 +131,6 @@ export const Logout = (req, res) => {
   }
 };
 
-// uplaod
 export const UploadFile = async (req, res) => {
   try {
     const { tid, cid } = req.body;
@@ -144,6 +143,7 @@ export const UploadFile = async (req, res) => {
       return res.status(400).json({ message: "tid and cid are required" });
     }
 
+    // remove .pdf extension
     const aid = path.parse(req.file.filename).name;
 
     const fileUrl = `${process.env.BASEURL}Default_VerifyCertificate.aspx/?tid=${tid}&cid=${cid}&aid=${aid}`;
@@ -152,7 +152,7 @@ export const UploadFile = async (req, res) => {
 
     const newUpload = new Upload({
       uploaderId: req.user._id,
-      file: aid,
+      file: aid, // store without .pdf
       qrCode,
       tid,
       cid,
