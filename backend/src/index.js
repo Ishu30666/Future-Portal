@@ -5,6 +5,7 @@ import path from "path";
 import cors from "cors";
 import dotenv from "dotenv";
 import ConnectDatabase from "../Lib/db.js";
+import Upload from "../Models/UploadRoutes.js";
 const app = express();
 dotenv.config();
 app.use(express.json());
