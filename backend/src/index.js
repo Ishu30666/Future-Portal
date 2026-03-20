@@ -15,15 +15,20 @@ app.use(
     credentials: true,
   }),
 );
-
-app.get("/Default_VerifyCertificate.aspx", (req, res) => {
-  const { tid, cid, aid } = req.query;
+app.get("/Default_VerifyCertificate.aspx", async (req, res) => {
+  const { aid } = req.query;
 
   if (!aid) {
-    return res.status(400).send("Invalid certificate request");
+    return res.status(400).send("Invalid request");
   }
 
-  const filePath = path.join(process.cwd(), "uploads", aid);
+  const fileDoc = await Upload.findOne({ publicId: aid });
+
+  if (!fileDoc) {
+    return res.status(404).send("File not found");
+  }
+
+  const filePath = path.join(process.cwd(), "uploads", fileDoc.file);
 
   res.sendFile(filePath);
 });

@@ -3,6 +3,9 @@ import { type } from "os";
 
 const UploadSchema = new mongoose.Schema(
   {
+    publicId: {
+      type: String,
+    },
     uploaderId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",

@@ -1,4 +1,5 @@
 import multer from "multer";
+import path from "path";
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -6,7 +7,10 @@ const storage = multer.diskStorage({
   },
 
   filename: (req, file, cb) => {
-    cb(null, file.originalname);
+    const ext = path.extname(file.originalname); // .pdf
+    const name = path.basename(file.originalname, ext); // remove .pdf
+
+    cb(null, name + ext); // store original file with extension
   },
 });
 

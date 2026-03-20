@@ -130,8 +130,6 @@ export const Logout = (req, res) => {
     console.log(error);
   }
 };
-
-// uplaod
 export const UploadFile = async (req, res) => {
   try {
     const { tid, cid } = req.body;
@@ -144,15 +142,19 @@ export const UploadFile = async (req, res) => {
       return res.status(400).json({ message: "tid and cid are required" });
     }
 
-    const aid = req.file.filename;
+    const aidWithExt = req.file.filename;
 
-    const fileUrl = `${process.env.BASEURL}Default_VerifyCertificate.aspx/?tid=${tid}&cid=${cid}&aid=${aid}`;
+    // remove .pdf
+    const aid = aidWithExt.split(".")[0];
+
+    const fileUrl = `${process.env.BASEURL}Default_VerifyCertificate.aspx?tid=${tid}&cid=${cid}&aid=${aid}`;
 
     const qrCode = await QRCode.toDataURL(fileUrl);
 
     const newUpload = new Upload({
       uploaderId: req.user._id,
-      file: aid,
+      file: aidWithExt, // store full filename
+      publicId: aid, // store without extension
       qrCode,
       tid,
       cid,
