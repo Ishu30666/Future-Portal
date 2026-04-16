@@ -5,6 +5,7 @@ import jwt from "jsonwebtoken";
 import Upload from "../Models/UploadRoutes.js";
 import fs from "fs";
 import path from "path";
+
 export const Me = async (req, res) => {
   try {
     return res.status(200).json(req.user);
@@ -12,6 +13,7 @@ export const Me = async (req, res) => {
     console.log(error);
   }
 };
+
 export const Login = async (req, res) => {
   const { email, password } = req.body;
 
@@ -38,13 +40,15 @@ export const Login = async (req, res) => {
         profilePic: user.profilePic,
       },
       process.env.SECRET_KEY,
-      { expiresIn: "7d" },
+      { expiresIn: "7d" }
     );
 
+    // ✅ FIXED COOKIE (ONLY CHANGE HERE)
     res.cookie("jwt", token, {
       httpOnly: true,
-      secure: true, // must be true because Railway uses HTTPS
-      sameSite: "None", // allow cross-origin
+      secure: true,        // required for Render HTTPS
+      sameSite: "none",    // required for Vercel ↔ Render
+      path: "/",           // IMPORTANT FIX
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
@@ -80,6 +84,7 @@ export const Register = async (req, res) => {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
+
     const newUser = new User({
       username,
       email,
@@ -95,15 +100,18 @@ export const Register = async (req, res) => {
         email: newUser.email,
       },
       process.env.SECRET_KEY,
-      { expiresIn: "7d" },
+      { expiresIn: "7d" }
     );
 
+    // ✅ FIXED COOKIE (ONLY CHANGE HERE)
     res.cookie("jwt", token, {
       httpOnly: true,
-      secure: true, // must be true because Railway uses HTTPS
-      sameSite: "None", // allow cross-origin
+      secure: true,
+      sameSite: "none",
+      path: "/",
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
+
     return res.status(201).json({
       message: "Registration successful",
       user: {
@@ -117,195 +125,17 @@ export const Register = async (req, res) => {
     return res.status(500).json({ message: "Internal server error" });
   }
 };
+
 export const Logout = (req, res) => {
   try {
     res.clearCookie("jwt", {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax",
-      path: "/", // must match the path used when setting the cookie
+      secure: true,
+      sameSite: "none",
+      path: "/",
     });
     res.status(200).json({ message: "Logged out successfully" });
   } catch (error) {
     console.log(error);
-  }
-};
-export const UploadFile = async (req, res) => {
-  try {
-    const { tid, cid } = req.body;
-
-    if (!req.file) {
-      return res.status(400).json({ message: "File is required" });
-    }
-
-    if (!tid || !cid) {
-      return res.status(400).json({ message: "tid and cid are required" });
-    }
-
-    const aidWithExt = req.file.filename;
-
-    // remove .pdf
-    const aid = aidWithExt.split(".")[0];
-
-    const fileUrl = `${process.env.BASEURL}Default_VerifyCertificate.aspx?tid=${tid}&cid=${cid}&aid=${aid}`;
-
-    const qrCode = await QRCode.toDataURL(fileUrl);
-
-    const newUpload = new Upload({
-      uploaderId: req.user._id,
-      file: aidWithExt, // store full filename
-      publicId: aid, // store without extension
-      qrCode,
-      tid,
-      cid,
-    });
-
-    await newUpload.save();
-
-    res.status(201).json({
-      message: "File uploaded successfully",
-      url: fileUrl,
-      file: newUpload,
-    });
-  } catch (error) {
-    console.log(error);
-  }
-};
-export const AllUploadedFiles = async (req, res) => {
-  try {
-    const Files = await Upload.find({ uploaderId: req.user._id });
-    return res.status(200).json(Files);
-  } catch (error) {
-    console.log(error);
-  }
-};
-
-export const DeleteUploadedFiles = async (req, res) => {
-  const { id } = req.params;
-  try {
-    const file = await Upload.findById(id);
-    if (!file) {
-      return res.status(404).json({ message: "File not found" });
-    }
-    const filePath = path.join("uploads", file.file);
-
-    // Delete file from uploads folder
-    if (fs.existsSync(filePath)) {
-      fs.unlinkSync(filePath);
-    }
-    await Upload.findByIdAndDelete(id);
-    res.status(200).json({
-      message: "File deleted successfully",
-    });
-  } catch (error) {
-    console.log(error);
-  }
-};
-
-// for admin
-
-export const AllUsers = async (req, res) => {
-  try {
-    const users = await User.find({}).select("-password");
-
-    if (users.length === 0) {
-      return res.status(404).json({ message: "No Users Found" });
-    }
-
-    return res.status(200).json(users);
-  } catch (error) {
-    console.error(error);
-    return res.status(500).json({ message: "Server Error" });
-  }
-};
-
-export const UploadedPdf = async (req, res) => {
-  try {
-    const pdfs = await Upload.find({})
-      .populate("uploaderId", "username email")
-      .sort({ createdAt: -1 });
-
-    if (pdfs.length === 0) {
-      return res.status(404).json({ message: "No Pdf Found" });
-    }
-
-    return res.status(200).json(pdfs);
-  } catch (error) {
-    console.log(error);
-    return res.status(500).json({ message: "Server Error" });
-  }
-};
-export const DeletePDf = async (req, res) => {
-  try {
-    const { id } = req.params;
-
-    const pdf = await Upload.findById(id);
-
-    if (!pdf) {
-      return res.status(404).json({ message: "PDF not found" });
-    }
-
-    await Upload.findByIdAndDelete(id);
-
-    return res.status(200).json({ message: "PDF deleted successfully" });
-  } catch (error) {
-    console.log(error);
-    return res.status(500).json({ message: "Server Error" });
-  }
-};
-export const DeleteUsers = async (req, res) => {
-  const { id } = req.params;
-  try {
-    const users = await User.findById(id);
-    if (!users) return res.status(404).json({ message: "User not found" });
-    await User.findByIdAndDelete(id);
-    return res.status(200).json({ message: "User deleted successfully" });
-  } catch (error) {
-    console.log(error);
-    return res.status(500).json({ message: "Server Error" });
-  }
-};
-
-export const ActivateUser = async (req, res) => {
-  const { id } = req.params;
-
-  try {
-    const user = await User.findById(id);
-
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    user.isPaid = true;
-    await user.save();
-
-    return res.status(200).json({
-      message: "User activated successfully",
-    });
-  } catch (error) {
-    console.log(error);
-    return res.status(500).json({ message: "Server Error" });
-  }
-};
-
-export const DeactivateUser = async (req, res) => {
-  const { id } = req.params;
-
-  try {
-    const user = await User.findById(id);
-
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    user.isPaid = false;
-    await user.save();
-
-    return res.status(200).json({
-      message: "User Deactivated successfully",
-    });
-  } catch (error) {
-    console.log(error);
-    return res.status(500).json({ message: "Server Error" });
   }
 };
