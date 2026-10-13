@@ -1,38 +1,28 @@
-
 import mongoose from "mongoose";
 
-const UploadSchema = new mongoose.Schema(
+const UserSchema = new mongoose.Schema(
   {
-    publicId: {
-      type: String,
-      unique: true,
-      sparse: true,
-    },
-    uploaderId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
-    },
-    file: {
+    username: {
       type: String,
       required: true,
     },
-    qrCode: {
+    email: {
       type: String,
       required: true,
     },
-    tid: {
+    password: {
       type: String,
       required: true,
     },
-    cid: {
-      type: String,
-      required: true,
+    isPaid: { type: Boolean, default: false },
+    isAdmin: {
+      type: Boolean,
+      default: false,
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
-const Upload = mongoose.model("Uploads", UploadSchema);
+const User = mongoose.model("User", UserSchema);
 
-export default Upload;
+export default User;
