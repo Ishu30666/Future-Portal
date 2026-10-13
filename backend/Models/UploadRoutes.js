@@ -1,10 +1,12 @@
+
 import mongoose from "mongoose";
-import { type } from "os";
 
 const UploadSchema = new mongoose.Schema(
   {
     publicId: {
       type: String,
+      unique: true,
+      sparse: true,
     },
     uploaderId: {
       type: mongoose.Schema.Types.ObjectId,
@@ -13,18 +15,27 @@ const UploadSchema = new mongoose.Schema(
     },
     file: {
       type: String,
+      required: true,
     },
     qrCode: {
       type: String,
+      required: true,
     },
     tid: {
       type: String,
+      required: true,
     },
-    cid: { type: String },
+    cid: {
+      type: String,
+      required: true,
+    },
   },
-  { timestamps: true },
+  { timestamps: true }
 );
 
-const Upload = mongoose.model("Uploads", UploadSchema);
+// Prevent OverwriteModelError
+const Upload =
+  mongoose.models.Uploads ||
+  mongoose.model("Uploads", UploadSchema);
 
 export default Upload;
